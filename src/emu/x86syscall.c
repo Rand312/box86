@@ -120,8 +120,8 @@ long my_ptrace(x86emu_t* emu, int request, pid_t pid, void* addr, uint32_t* data
 
 // Syscall table for x86 can be found here: http://shell-storm.org/shellcode/files/syscalls.html
 typedef struct scwrap_s {
-    int nats;
-    int nbpars;
+    int nats;      // native syscall number
+    int nbpars;     // number of parameters
 } scwrap_t;
 
 scwrap_t syscallwrap[] = {
@@ -409,12 +409,16 @@ static int my_ipc (uint call, int first, int second, int third, void *ptr, long 
 void EXPORT x86Syscall(x86emu_t *emu)
 {
     RESET_FLAGS(emu);
+    // 获取 x86 系统调用号
     uint32_t s = R_EAX;
     printf_log(LOG_DEBUG, "%p: Calling syscall 0x%02X (%d) %p %p %p %p %p", (void*)R_EIP, s, s, (void*)R_EBX, (void*)R_ECX, (void*)R_EDX, (void*)R_ESI, (void*)R_EDI); 
     // check wrapper first
     int cnt = sizeof(syscallwrap) / sizeof(scwrap_t);
+    // 如果系统调用号没超过范围，且 syscallwrap 对 guest syscall number 有映射
     if(s<cnt && syscallwrap[s].nats) {
+        //
         int sc = syscallwrap[s].nats;
+        // 如果参数数量 <= 6，直接从寄存器里面获取参数（i386 规定，前 6 个参数可以使用寄存器传参）
         switch(syscallwrap[s].nbpars) {
             case 0: S_EAX = syscall(sc); break;
             case 1: S_EAX = syscall(sc, R_EBX); break;
@@ -433,6 +437,7 @@ void EXPORT x86Syscall(x86emu_t *emu)
         printf_log(LOG_DEBUG, " => 0x%x\n", R_EAX);
         return;
     }
+    // 特殊系统调用的处理
     switch (s) {
         case 1: // sys_exit
             emu->quit = 1;

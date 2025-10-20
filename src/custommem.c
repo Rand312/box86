@@ -530,7 +530,7 @@ uintptr_t AllocDynarecMap(size_t size)
         }
         // check if new
         if(!list->chunks[i].size) {
-            // alloc a new block, aversized or not, we are at the end of the list
+        getDB    // alloc a new block, aversized or not, we are at the end of the list
             size_t allocsize = (sz>DYNMMAPSZ)?sz:DYNMMAPSZ;
             // allign sz with pagesize
             allocsize = (allocsize+(box86_pagesize-1))&~(box86_pagesize-1);

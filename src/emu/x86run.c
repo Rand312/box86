@@ -90,7 +90,7 @@ x86emurun:
                 PrintTrace(emu, addr, 0);
 #endif
         emu->old_ip = addr;
-
+        // 从当前地址读取一个字节作为 opcode，且将地址增加 1
         opcode = F8;
         
         rep = 0;
@@ -103,6 +103,7 @@ x86emurun:
             opcode = F8;
         }
 
+        // 一个超大的 switch case 语句，模拟执行 x86 指令集
         switch(opcode) {
 
         #define GO(B, OP)                               \
@@ -1122,10 +1123,13 @@ x86emurun:
             break;
         case 0xCD:                      /* INT Ib */
             nextop = F8;
+            // 处理 INT 0x80 系统调用
             if(nextop == 0x80) {
                 emu->old_ip = R_EIP;
                 R_EIP = addr;
                 #ifndef TEST_INTERPRETER
+                // 系统调用转发
+                // 某些系统调用会设置 emu->quit = 1，如 fork
                 x86Syscall(emu);
                 #endif
                 addr = R_EIP;
@@ -1615,9 +1619,11 @@ x86emurun:
             }
         }
         #endif
+        // 将当前地址作为下一条指令的地址
         R_EIP = addr;
     }
 
+// emu->quit = 1 表示退出解释执行的循环，处理一些特殊逻辑
 fini:
 #ifndef TEST_INTERPRETER
     // check the TRACE flag before going to out, in case it's a step by step scenario
@@ -1644,6 +1650,7 @@ fini:
         emu->quit = 0;
         emu->fork = 0;
         emu = x86emu_fork(emu, forktype);
+        // 父子线程都重新回到 x86emurun 标签，继续解释执行
         goto x86emurun;
     }
     // setcontext handling

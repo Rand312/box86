@@ -11,7 +11,7 @@ typedef struct dynablock_s {
     void*           actual_block;   // the actual start of the block (so block-sizeof(void*))
     struct dynablock_s*    previous;   // a previous block that might need to be freed
     int             size;
-    void*           x86_addr;
+    void*           x86_addr;    // x86 指令地址（guest addr）
     uintptr_t       x86_size;
     uint32_t        hash;
     uint8_t         done;

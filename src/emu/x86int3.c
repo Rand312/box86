@@ -33,12 +33,15 @@ typedef int32_t (*iFpppp_t)(void*, void*, void*, void*);
 
 x86emu_t* x86emu_fork(x86emu_t* emu, int forktype)
 {
+    // fork 函数执行前，执行所有注册的 atfork prepare 函数
+    // 使用 __register_atfork 进行注册
     // execute atforks prepare functions, in reverse order
     for (int i=my_context->atfork_sz-1; i>=0; --i)
         if(my_context->atforks[i].prepare)
             EmuCall(emu, my_context->atforks[i].prepare);
     int type = emu->type;
     int v;
+    // 不同 forktype，调用不同的 fork 函数
     if(forktype==2) {
         iFpppp_t forkpty = (iFpppp_t)emu->forkpty_info->f;
         v = forkpty(emu->forkpty_info->amaster, emu->forkpty_info->name, emu->forkpty_info->termp, emu->forkpty_info->winp);
@@ -46,17 +49,20 @@ x86emu_t* x86emu_fork(x86emu_t* emu, int forktype)
     } else if(forktype==3)
         v = vfork();
     else
+        // 相当于 fork 了一个子进程，也就是 fork 了一个 emu 结构一个解释器
         v = fork();
     if(type == EMUTYPE_MAIN)
         thread_set_emu(emu);
     if(v==EAGAIN || v==ENOMEM) {
         // error...
-    } else if(v!=0) {  
+    } else if(v!=0) { 
+        // 父线程，执行所有注册的 atfork parent 函数
         // execute atforks parent functions
         for (int i=0; i<my_context->atfork_sz; --i)
             if(my_context->atforks[i].parent)
                 EmuCall(emu, my_context->atforks[i].parent);
     } else if(v==0) {
+        // 子线程，执行所有注册的 atfork child 函数
         // execute atforks child functions
         for (int i=0; i<my_context->atfork_sz; --i)
             if(my_context->atforks[i].child)

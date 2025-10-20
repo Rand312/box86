@@ -202,6 +202,8 @@ static dynablock_t* internalDBGetBlock(x86emu_t* emu, uintptr_t addr, uintptr_t 
 {
     if(hasAlternate((void*)addr))
         return NULL;
+
+    // 根据指令地址 addr，查找对应的 dynablock 结构，有，直接返回
     dynablock_t* block = getDB(addr);
     if(block || !create)
         return block;
@@ -220,6 +222,8 @@ static dynablock_t* internalDBGetBlock(x86emu_t* emu, uintptr_t addr, uintptr_t 
         }
     }
     
+    // 没找到对应的 dynablock 结构，创建一个新的
+    // 在这个新的 dynablock 里面，调用 fillBlock 函数重编译后的指令
     block = AddNewDynablock(addr);
 
     // fill the block
@@ -231,6 +235,7 @@ static dynablock_t* internalDBGetBlock(x86emu_t* emu, uintptr_t addr, uintptr_t 
             mutex_unlock(&my_context->mutex_dyndump);
         return NULL;
     }
+    // arm_pass_xx，4 遍 pass 重编译指令，填充 block
     void* ret = FillBlock(block, filladdr);
     if(!ret) {
         dynarec_log(LOG_DEBUG, "Fillblock of block %p for %p returned an error\n", block, (void*)addr);

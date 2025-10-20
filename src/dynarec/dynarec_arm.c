@@ -457,6 +457,7 @@ dynarec_log(LOG_DEBUG, "Asked to Fill block %p with %p\n", block, (void*)addr);
         return NULL;
     }
     // protect the 1st page
+    // 移除这页的写属性，可以执行
     protectDB(addr, 1);
     // init the helper
     dynarec_arm_t helper = {0};

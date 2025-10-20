@@ -169,12 +169,16 @@ int DynaRun(x86emu_t* emu)
         if(emu->flags.need_jmpbuf)
             emu->flags.need_jmpbuf = 0;
 
+        // 如果没有 dynarec，那么解释执行
 #ifndef DYNAREC
         Run(emu, 0);
 #else
         if(!box86_dynarec)
             Run(emu, 0);
         else {
+            // 根据 eip 查找翻译后的 block
+            // DBGetBlock 函数会在哈希表里面进行查找，如果找到，直接返回
+              // 如果没找到，创建新 block，调用 FillBlock 函数重编译指令来填充 block，随后返回
             dynablock_t* block = (skip || ACCESS_FLAG(F_TF))?NULL:DBGetBlock(emu, R_EIP, 1);
             if(!block || !block->block || !block->done) {
                 skip = 0;
@@ -187,6 +191,8 @@ int DynaRun(x86emu_t* emu)
             } else {
                 dynarec_log(LOG_DEBUG, "%04d|Running DynaRec Block @%p (%p) of %d x86 insts (hash=0x%x) emu=%p\n", GetTID(), (void*)R_EIP, block->block, block->isize, block->hash, emu);
                 // block is here, let's run it!
+                // 先跳去 prolog 执行序言部分，主要是保存模拟器的上下文，切换到 “guest” 的上下文
+                // 随后便会跳去 block->block 执行翻译后的指令
                 arm_prolog(emu, block->block);
             }
             if(emu->fork) {
