@@ -77,17 +77,24 @@ void x86Int3(x86emu_t* emu)
 {
     if(Peek(emu, 0)=='S' && Peek(emu, 1)=='C') // Signature for "Out of x86 door"
     {
+        // 当前 EIP 指向 bridge 位置
+        // +2 后指向 wrapper 变量位置
         R_EIP += 2;
         #if defined(RK3399) || defined(GOA_CLONE)
         volatile    // to avoid addr to be put in an VFPU register
         #endif
+        // 当前 eip 指向 wrapper 变量地址
+        // fetch32 则取出 wrapper 函数地址并赋值给 addr 变量
+        // fetch32 隐式 +2，现在指向 native 函数地址
         uint32_t addr = Fetch32(emu);
         if(addr==0) {
             //printf_log(LOG_INFO, "%p:Exit x86 emu (emu=%p)\n", *(void**)(R_ESP), emu);
             emu->quit=1; // normal quit
         } else {
             RESET_FLAGS(emu);
-            wrapper_t w = (wrapper_t)addr;
+            wrapper_t w = (wrapper_t)addr; // wrapper 函数地址
+            // 当前指向 native 函数地址
+            // fetch32 则取出 nattive 函数地址并赋值给 addr 变量
             addr = Fetch32(emu);
             /* This party can be used to trace only 1 specific lib (but it is quite slow)
             elfheader_t *h = FindElfAddress(my_context, *(uintptr_t*)(R_ESP));
@@ -360,6 +367,7 @@ void x86Int3(x86emu_t* emu)
                     mutex_unlock(&emu->context->mutex_trace);
                 }
             } else
+                // 调用 wrapper 函数，addr 是原生函数地址
                 w(emu, addr);
         }
         return;

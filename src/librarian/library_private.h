@@ -31,6 +31,21 @@ typedef struct symbol2_s {
     uintptr_t   addr;
 } symbol2_t;
 
+// typedef struct kh_symbolmap_s
+// {
+//     khint_t n_buckets, size, n_occupied, upper_bound;
+//     khint32_t *flags;
+//     kh_cstr_t *keys;
+//     symbol1_t *vals;
+// } kh_symbolmap_t;
+// extern kh_symbolmap_t *kh_init_symbolmap(void);
+// extern void kh_destroy_symbolmap(kh_symbolmap_t *h);
+// extern void kh_clear_symbolmap(kh_symbolmap_t *h);
+// extern khint_t kh_get_symbolmap(const kh_symbolmap_t *h, kh_cstr_t key);
+// extern int kh_resize_symbolmap(kh_symbolmap_t *h, khint_t new_n_buckets);
+// extern khint_t kh_put_symbolmap(kh_symbolmap_t *h, kh_cstr_t key, int *ret);
+// extern void kh_del_symbolmap(kh_symbolmap_t *h, khint_t x);
+
 KHASH_MAP_DECLARE_STR(symbolmap, symbol1_t)
 KHASH_MAP_DECLARE_STR(symbol2map, symbol2_t)
 KHASH_MAP_DECLARE_STR(datamap, uint32_t)

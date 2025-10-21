@@ -105,10 +105,12 @@ void MapLibAddLib(lib_t* maplib, library_t* lib)
     ++maplib->libsz;
 }
 
+// 在 maplib 中插入 lib，插入位置为 ref 之后
 void MapLibPrependLib(lib_t* maplib, library_t* lib, library_t* ref)
 {
     if(libraryInMapLib(maplib, lib))
         return;
+    // maplib 扩容
     if (maplib->libsz == maplib->libcap) {
         maplib->libcap += 8;
         maplib->libraries = (library_t**)box_realloc(maplib->libraries, maplib->libcap*sizeof(library_t*));
@@ -259,6 +261,10 @@ static int AddNeededLib_add(lib_t** maplib, int local, needed_libs_t* needed, in
         return 1;
     }
 
+// linkmap（链接映射）是维护已加载共享库信息的数据结构，核心作用包括：
+// 跟踪库加载地址（l_addr）、路径名称（l_name）和动态节地址（l_ld）
+// 构建库之间的依赖关系链表（通过 l_prev/l_next 指针）
+// 为动态链接器提供符号解析和重定位所需的基础信息
     if (lib->type == LIB_EMULATED) {
         // Need to add library to the linkmap (put here so the link is ordered)
         linkmap_t *lm = addLinkMapLib(lib);
@@ -542,6 +548,8 @@ static int GetGlobalSymbolStartEnd_internal(lib_t *maplib, const char* name, uin
 }
 void** my_GetGTKDisplay();
 void** my_GetGthreadsGotInitialized();
+
+// 获取全局符号的起始地址和结束地址
 int GetGlobalSymbolStartEnd(lib_t *maplib, const char* name, uintptr_t* start, uintptr_t* end, elfheader_t* self, int version, const char* vername, const char* globdefver, const char* weakdefver)
 {
     if(GetGlobalSymbolStartEnd_internal(maplib, name, start, end, self, version, vername, globdefver, weakdefver)) {

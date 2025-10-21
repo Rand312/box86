@@ -94,6 +94,7 @@ const char* GetNativeName(void* p)
     }
     #endif
     Dl_info info;
+    // 获取符号信息，如函数名
     if(dladdr(p, &info)==0) {
         const char *ret = GetNameOffset(my_context->maplib, p);
         if(ret)

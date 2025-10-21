@@ -340,6 +340,7 @@ static int loadEmulatedLib(const char* libname, library_t *lib, box86context_t* 
     return 0;
 }
 
+// emulated lib is x86 elf file
 static void initEmulatedLib(const char* path, library_t *lib, box86context_t* context, elfheader_t* verneeded)
 {
     char libname[MAX_PATH];
@@ -461,6 +462,8 @@ library_t *NewLibrary(const char* path, box86context_t* context, elfheader_t* ve
             return NULL;
         }
     }
+    // Collection of libs that should not be wrapped
+    // 如果返回非 0 则表示该库不应该被包装
     int notwrapped = FindInCollection(lib->name, &context->box86_emulated_libs);
     int essential = isEssentialLib(lib->name);
     if(!notwrapped && box86_prefer_emulated && !essential)
@@ -496,6 +499,9 @@ library_t *NewLibrary(const char* path, box86context_t* context, elfheader_t* ve
 
     return lib;
 }
+
+// 将 ELF 文件中的符号信息加载到符号表结构中，为动态链接和符号解析提供支持
+// 将符号信息（名称、地址、大小、类型）存入 maplib 的全局符号表
 int AddSymbolsLibrary(lib_t *maplib, library_t* lib, x86emu_t* emu)
 {
     (void)emu;
@@ -765,6 +771,7 @@ elfheader_t* GetElf(library_t* lib)
     return lib->e.elf;
 }
 
+// 按照 普通符号、弱符号、自定义符号 顺序查找符号
 static int getSymbolInDataMaps(library_t*lib, const char* name, int noweak, uintptr_t *addr, uintptr_t *size, int* weak)
 {
     void* symbol;
@@ -982,6 +989,7 @@ static int getSymbolInSymbolMaps(library_t*lib, const char* name, int noweak, ui
     return 0;
 }
 
+// 查找符号
 int getSymbolInMaps(library_t *lib, const char* name, int noweak, uintptr_t *addr, uintptr_t *size, int* weak, int version, const char* vername, int local)
 {
     if(version==-2) // don't send global native symbol for a version==-2 search

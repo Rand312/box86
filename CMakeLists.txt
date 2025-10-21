@@ -828,6 +828,47 @@ if(NOT _x86 AND NOT _x86_64)
   endif()
 endif()
 
+# 预编译src目录下所有源代码到build/precompile目录
+set(PRECOMPILE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/precompile)
+
+# 收集所有C源文件
+file(GLOB_RECURSE ALL_SRC_FILES "src/wrapped/*.c")
+list(REMOVE_DUPLICATES ALL_SRC_FILES)
+
+# 获取所有编译选项和宏定义
+get_directory_property(COMPILE_DEFINITIONS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} COMPILE_DEFINITIONS)
+foreach(DEF ${COMPILE_DEFINITIONS})
+    list(APPEND PRECOMPILE_FLAGS "-D${DEF}")
+endforeach()
+list(APPEND PRECOMPILE_FLAGS ${CMAKE_C_FLAGS})
+
+# 获取所有包含目录
+get_property(INCLUDE_DIRS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+foreach(DIR ${INCLUDE_DIRS})
+    list(APPEND PRECOMPILE_FLAGS "-I${DIR}")
+endforeach()
+
+# 为每个源文件创建预编译命令
+foreach(SRC_FILE ${ALL_SRC_FILES})
+    file(RELATIVE_PATH REL_PATH ${CMAKE_SOURCE_DIR} ${SRC_FILE})
+    set(OUTPUT_FILE ${PRECOMPILE_OUTPUT_DIR}/${REL_PATH}.i)
+    get_filename_component(OUTPUT_DIR ${OUTPUT_FILE} DIRECTORY)
+    file(MAKE_DIRECTORY ${OUTPUT_DIR})
+    
+    add_custom_command(
+        OUTPUT ${OUTPUT_FILE}
+        COMMAND ${CMAKE_C_COMPILER} ${PRECOMPILE_FLAGS} -E ${SRC_FILE} -o ${OUTPUT_FILE}
+        DEPENDS ${SRC_FILE}
+        COMMENT "Precompiling ${REL_PATH}"
+    )
+    list(APPEND PRECOMPILE_OUTPUTS ${OUTPUT_FILE})
+endforeach()
+
+# 创建预编译目标
+add_custom_target(precompile ALL
+    DEPENDS ${PRECOMPILE_OUTPUTS}
+    COMMENT "Precompiled all sources to ${PRECOMPILE_OUTPUT_DIR}"
+)
 if(NOT TARGET uninstall)
     configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"

@@ -133,6 +133,8 @@ static const map_onedata_t MAPNAME(mydatamap)[] = {
 #undef DOIT
 #undef _DOIT
 
+// wrapped library 的初始化函数
+// .e.g，wrappedgstreamer.c 包含了该头文件，那么就会实例化 wrappedgstreamer_init 函数
 int FUNC(_init)(library_t* lib, box86context_t* box86)
 {
     (void)box86;
