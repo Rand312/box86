@@ -832,7 +832,7 @@ endif()
 set(PRECOMPILE_OUTPUT_DIR ${CMAKE_BINARY_DIR}/precompile)
 
 # 收集所有C源文件
-file(GLOB_RECURSE ALL_SRC_FILES "src/wrapped/*.c")
+file(GLOB_RECURSE ALL_SRC_FILES "src/tools/bridge.c")
 list(REMOVE_DUPLICATES ALL_SRC_FILES)
 
 # 获取所有编译选项和宏定义

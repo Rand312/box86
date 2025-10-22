@@ -88,6 +88,25 @@ void FreeBridge(bridge_t** bridge)
 void addBridgeName(void* addr, const char* name);
 #endif
 
+// .e.g    s->addr = AddBridge(lib->w.bridge, s->w, symbol, 0, name);
+
+// typedef union onebridge_s {
+//     struct {
+//     uint8_t CC;     // CC int 0x3
+//     uint8_t S, C;   // 'S' 'C', just a signature
+//     wrapper_t w;    // wrapper
+//     uintptr_t f;    // the function for the wrapper
+//     uint8_t C3;     // C2 or C3 ret
+//     uint16_t N;     // N in case of C2 ret
+//     };
+//     uint32_t dummy[4];
+// } onebridge_t;
+
+// w 表示 wrapper 函数指针
+// fnc 表示 arm native 函数指针
+
+// C S 无特殊含义，做标志用
+// N C2 C3 应该为了后续 call/ret 优化
 uintptr_t AddBridge(bridge_t* bridge, wrapper_t w, void* fnc, int N, const char* name)
 {
     if(!bridge) return 0;

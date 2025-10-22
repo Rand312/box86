@@ -82,6 +82,7 @@ int FileIsX64ELF(const char* filename)
     return 0;
 }
 
+// 打开该文件，并读取 header，判断是否为 x86 elf 文件
 int FileIsX86ELF(const char* filename)
 {
     FILE *f = fopen(filename, "rb");

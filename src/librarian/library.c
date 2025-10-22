@@ -772,6 +772,10 @@ elfheader_t* GetElf(library_t* lib)
 }
 
 // 按照 普通符号、弱符号、自定义符号 顺序查找符号
+// wrapped lib 的符号，在加载 wrapped 库初始化的时候，就将其符号信息放入了 hash 表中，如 lib->w.datamap
+// 举个例子，libc 库，wrappedlibc.c 中定义了 wrappedlic_init 函数，该库加载的时候，调用 wrappedlic_init 初始化符号等信息
+// 另外注意 wrapped lib 的符号，并不是真正的函数符号，比如说函数 execl，实际存放的是 iFEpV 这个 wrapper 函数指针
+// 对于 wrapped 库，可以进行预编译，如 wrappedlib.c.i 文件中看到更详细的信息
 static int getSymbolInDataMaps(library_t*lib, const char* name, int noweak, uintptr_t *addr, uintptr_t *size, int* weak)
 {
     void* symbol;
@@ -835,11 +839,17 @@ static int getSymbolInSymbolMaps(library_t*lib, const char* name, int noweak, ui
             else
                 strcpy(buff, "my_");
             strcat(buff, name);
+            // 获取原生函数地址
             symbol = dlsym(my_context->box86lib, buff);
             if(!symbol) {
                 printf_log(LOG_NONE, "Warning, function %s not found\n", buff);
                 return 0;
             }
+            // 为该 wrapper 函数，原生函数，生成一个 bridge，并返回其地址作为该 符号 的地址
+            // 也就是说后续调用该符号，实际上会先去调用该 bridge 函数
+            // 不论是翻译执行，还是解释执行，碰到 0xCC 'S' 'C' 字节序列，就会跳去 x86Int3
+            // x86Int3 该函数则会去调用 wrapper 函数
+            // wrapper 函数会从当前 emu 保存的寄存器上下文中，获取参数，然后执行原生函数
             s->addr = AddBridge(lib->w.bridge, s->w, symbol, 0, name);
             s->resolved = 1;
         }
@@ -873,10 +883,12 @@ static int getSymbolInSymbolMaps(library_t*lib, const char* name, int noweak, ui
         return 1;
     }
     // check in symbolmap
+    // 获取 wrapper 指针
     k = kh_get(symbolmap, lib->w.symbolmap, name);
     if (k!=kh_end(lib->w.symbolmap)) {
         symbol1_t *s = &kh_value(lib->w.symbolmap, k);
         if(!s->resolved) {
+            // 获取原生函数地址
             symbol = dlsym(lib->w.lib, name);
             if(!symbol && lib->w.altprefix) {
                 char newname[200];
@@ -896,6 +908,11 @@ static int getSymbolInSymbolMaps(library_t*lib, const char* name, int noweak, ui
                 printf_dump(LOG_INFO, "Warning, function %s not found in lib %s\n", name, lib->name);
                 return 0;
             }
+            // 为该 wrapper 函数，原生函数，生成一个 bridge，并返回其地址作为该 符号 的地址
+            // 也就是说后续调用该符号，实际上会先去调用该 bridge 函数
+            // 不论是翻译执行，还是解释执行，碰到 0xCC 'S' 'C' 字节序列，就会跳去 x86Int3
+            // x86Int3 该函数则会去调用 wrapper 函数
+            // wrapper 函数会从当前 emu 保存的寄存器上下文中，获取参数，然后执行原生函数
             s->addr = AddBridge(lib->w.bridge, s->w, symbol, 0, name);
             s->resolved = 1;
         }
